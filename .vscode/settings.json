@@ -1,0 +1,30 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/n/dev_ws_mini_project/build/vision_node",
+        "/home/n/dev_ws_mini_project/install/vision_node/lib/python3.10/site-packages",
+        "/home/n/dev_ws_mini_project/build/planning_node",
+        "/home/n/dev_ws_mini_project/install/planning_node/lib/python3.10/site-packages",
+        "/home/n/dev_ws_mini_project/build/movement_node",
+        "/home/n/dev_ws_mini_project/install/movement_node/lib/python3.10/site-packages",
+        "/home/n/dev_turtlebot_ws/build/my_robot_controller",
+        "/home/n/dev_turtlebot_ws/install/my_robot_controller/lib/python3.10/site-packages",
+        "/home/n/dev_turtlebot_ws/build/joy_tester",
+        "/home/n/dev_turtlebot_ws/install/joy_tester/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/n/dev_ws_mini_project/build/vision_node",
+        "/home/n/dev_ws_mini_project/install/vision_node/lib/python3.10/site-packages",
+        "/home/n/dev_ws_mini_project/build/planning_node",
+        "/home/n/dev_ws_mini_project/install/planning_node/lib/python3.10/site-packages",
+        "/home/n/dev_ws_mini_project/build/movement_node",
+        "/home/n/dev_ws_mini_project/install/movement_node/lib/python3.10/site-packages",
+        "/home/n/dev_turtlebot_ws/build/my_robot_controller",
+        "/home/n/dev_turtlebot_ws/install/my_robot_controller/lib/python3.10/site-packages",
+        "/home/n/dev_turtlebot_ws/build/joy_tester",
+        "/home/n/dev_turtlebot_ws/install/joy_tester/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}
