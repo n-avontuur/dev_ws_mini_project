@@ -20,6 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            "vision_sender_node = mini_project.vision_sender_node:main",
+            "vision_reciever_node = mini_project.vision_reciever_node:main"
         ],
     },
 )
