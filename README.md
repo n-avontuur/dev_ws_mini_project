@@ -2,6 +2,7 @@
 
 
 ### Run Launch files of Depthai
+
 Run the following command
  - cd dai_ws (Our workspace) 
  - source install/setup.bash 
