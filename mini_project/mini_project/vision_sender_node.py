@@ -25,8 +25,11 @@ class VisionSenderNode(Node):
         device = depthai.Device(pipeline, usb2Mode=True)
         return device
 
-    def camera_output(self):
-        q_rgb = self.device.getOutputQueue("rgb", 8, False)
+        def cameraOutput(self):
+        q_rgb = self.device.getOutputQueue("rgb")
+
+        # Define the desired publishing rate (e.g., 2 images per second)
+        publishing_rate = 0.5  # 1 / 2 seconds
 
         while rclpy.ok():
             in_rgb = q_rgb.tryGet()
@@ -36,6 +39,9 @@ class VisionSenderNode(Node):
                 self.image_msg.header.stamp = self.get_clock().now().to_msg()
                 self.cam.publish(self.image_msg)
                 self.get_logger().info("Image sent")
+
+            # Add a sleep to control the publishing rate
+            time.sleep(publishing_rate)
         
 def main(args=None):
     rclpy.init(args=args)
