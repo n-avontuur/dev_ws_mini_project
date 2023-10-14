@@ -1,11 +1,16 @@
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+
 class vision_sender_node():
     def __init__(self):
         super().__init__("vision_node")
         self.bridge = CvBridge()
         self.cam = self.create_publisher(Image, "/cam", 10)
         self.image_msg = Image()
-        self.get_logger().info("vision node started")
         self.device = self.init_depthai_device()
+        self.get_logger().info("vision node started")
 
     def init_depthai_device(self):
         pipeline = depthai.Pipeline()
