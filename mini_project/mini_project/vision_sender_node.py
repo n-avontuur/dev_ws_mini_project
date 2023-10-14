@@ -1,4 +1,4 @@
-class vision_sender_node(Node):
+class vision_sender_node():
     def __init__(self):
         super().__init__("vision_node")
         self.bridge = CvBridge()
