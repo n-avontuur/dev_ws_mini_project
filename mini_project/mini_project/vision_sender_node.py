@@ -24,8 +24,9 @@ class VisionSenderNode(Node):
         
         device = depthai.Device(pipeline, usb2Mode=True)
         return device
-
-    def cameraOutput(self):
+    
+    
+    def camera_output(self):
         q_rgb = self.device.getOutputQueue("rgb")
 
         # Define the desired publishing rate (e.g., 2 images per second)
@@ -42,7 +43,6 @@ class VisionSenderNode(Node):
 
             # Add a sleep to control the publishing rate
             time.sleep(publishing_rate)
-    
         
 def main(args=None):
     rclpy.init(args=args)
