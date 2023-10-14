@@ -11,17 +11,18 @@ class vision_reciever_node(Node):
         self.images = self.create_subscription(Image, "/cam", self.image_callback, 10)
         self.image_msg = Image()
         self.get_logger().info("vision node started")
-        
+        self.timer = self.create_timer(0.1, self.display_image)  # Adjust the period as needed
+        self.bridge = CvBridge()
 
     def image_callback(self, msg):
         self.get_logger().info("Image received")
-        if msg is not None:
+        self.image_msg = msg
+
+    def display_image(self):
+        if self.image_msg is not None:
             try:
-                # Convert the Image message to a NumPy array
-                cv_image = CvBridge().imgmsg_to_cv2(msg, desired_encoding="bgr8")
-                # Display the image using OpenCV
-                cv2.imshow("preview", cv_image)
-                cv2.waitKey(1)  # Wait for a short time to update the display (1 millisecond)
+                cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
+                # Your image processing or display code here
             except CvBridgeError as e:
                 self.get_logger().error(f"Error converting Image message: {e}")
 
