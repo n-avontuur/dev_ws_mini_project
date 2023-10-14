@@ -2,6 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+import depthai
 
 class vision_sender_node():
     def __init__(self):
