@@ -32,7 +32,7 @@ class VisionSenderNode(Node):
         q_rgb = self.device.getOutputQueue("rgb")
 
         # Define the desired publishing rate (e.g., 2 images per second)
-        publishing_rate = 0.5  # 1 / 2 seconds
+        publishing_rate = 0.8   # 1 / 2 seconds
 
         while rclpy.ok():
             in_rgb = q_rgb.tryGet()
