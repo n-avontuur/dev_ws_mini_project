@@ -1,18 +1,3 @@
-# dev_ws_mini_project_src
-
-
-### Run Launch files of Depthai
-
-Run the following command
- - cd dai_ws (Our workspace) 
- - source install/setup.bash 
- - ros2 launch depthai_examples stereo_inertial_node.launch.py
-
-
-### Install PC side
-
-
-## ROS install
 locale  # check for UTF-8
 
 sudo apt update && sudo apt install locales
@@ -60,23 +45,6 @@ rosdep install --from-paths src --ignore-src -y --skip-keys "fastcdr rti-connext
 cd ~/ros2_humble/
 colcon build --symlink-install
 
-
-
-
-## Turtlebot install
-sudo apt install ros-humble-gazebo-*
-sudo apt install ros-humble-cartographer
-sudo apt install ros-humble-cartographer-ros
-sudo apt install ros-humble-navigation2
-sudo apt install ros-humble-nav2-bringup
-source ~/.bashrc\
-sudo apt install ros-humble-dynamixel-sdk
-sudo apt install ros-humble-turtlebot3-msgs
-sudo apt install ros-humble-turtlebot3
-echo 'export ROS_DOMAIN_ID=30 #TURTLEBOT3' >> ~/.bashrc
-source ~/.bashrc
-
-### Install raspberry side
 
 sudo apt install python3-argcomplete python3-colcon-common-extensions libboost-system-dev build-essential
 sudo apt install ros-humble-hls-lfcd-lds-driver
