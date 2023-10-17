@@ -3,8 +3,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import depthai
-import time
-
+import cv2
 
 class VisionSenderNode(Node):
     def __init__(self):
@@ -13,26 +12,30 @@ class VisionSenderNode(Node):
         self.cam = self.create_publisher(Image, "/cam", 10)
         self.image_msg = Image()
         self.get_logger().info("Vision node started")
-        self.device = self.init_depthai_device()
-        
-    def init_depthai_device(self):
+        self.device = self.init_depthai_device(rgb_fps=15, resolution=(1920, 1080))  # Set the desired FPS for the RGB camera
+
+    def init_depthai_device(self , rgb_fps, resolution):
         pipeline = depthai.Pipeline()
+
+        # Configure the RGB camera with the desired FPS
         cam_rgb = pipeline.create(depthai.node.ColorCamera)
-        cam_rgb.setPreviewSize(300, 300)
+        cam_rgb.setPreviewSize(*resolution)
         cam_rgb.setInterleaved(False)
+        cam_rgb.setFps(rgb_fps)
+        cam_rgb.setBoardSocket(depthai.CameraBoardSocket.RGB)
+        cam_rgb.setAutoExposureMode(depthai.ColorCameraProperties.AutoExposureMode.MANUAL)
+        
+        
         xout_rgb = pipeline.create(depthai.node.XLinkOut)
         xout_rgb.setStreamName("rgb")
         cam_rgb.preview.link(xout_rgb.input)
-        
+
         device = depthai.Device(pipeline, usb2Mode=True)
         return device
-    
-    
+
     def camera_output(self):
         q_rgb = self.device.getOutputQueue("rgb")
 
-        # Define the desired publishing rate (e.g., 2 images per second)
-        publishing_rate = 0.8   # 1 / 2 seconds
 
         while rclpy.ok():
             in_rgb = q_rgb.tryGet()
@@ -43,9 +46,7 @@ class VisionSenderNode(Node):
                 self.cam.publish(self.image_msg)
                 self.get_logger().info("Image sent")
 
-            # Add a sleep to control the publishing rate
-            time.sleep(publishing_rate)
-        
+
 def main(args=None):
     rclpy.init(args=args)
     node = VisionSenderNode()
