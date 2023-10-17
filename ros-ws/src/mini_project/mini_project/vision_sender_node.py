@@ -38,7 +38,6 @@ class vision_publisher_node(Node):
             if in_rgb is not None:
                 frame = in_rgb.getCvFrame()
                 self.publish_image(frame)
-            rclpy.spin_once()
 
     def publish_image(self, frame):
         msg = self.bridge.cv2_to_imgmsg(frame, "bgr8")
@@ -48,7 +47,6 @@ class vision_publisher_node(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = vision_publisher_node()
-
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
