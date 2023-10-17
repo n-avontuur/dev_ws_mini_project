@@ -10,7 +10,7 @@ class vision_publisher_node(Node):
         super().__init__("vision_sender_node")
         self.bridge = CvBridge()
         self.cam = self.create_publisher(Image, "/cam", 10)
-        self.get_logger().info("Vision_sender_node started")
+        self.get_logger().info("Vision_publisher_node started")
         self.device = self.init_depthai_device()  # Initialize DepthAI device
 
     def init_depthai_device(self):
