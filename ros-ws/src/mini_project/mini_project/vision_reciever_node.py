@@ -9,10 +9,9 @@ class vision_receiver_node(Node):
     def __init__(self):
         super().__init__("vision_node")
         self.images = self.create_subscription(Image, "/cam", self.image_callback, 10)
-        self.image_msg = Image()
-        self.get_logger().info("Vision node started")
+        self.get_logger().info("Vision_subscriber_node started")
         self.bridge = CvBridge()
-
+        self.image_msg = Image()
         # Create a window for image display and set the window size
         cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
         cv2.resizeWindow("Image", 800, 600)  # Replace 800 and 600 with your desired width and height
@@ -20,6 +19,7 @@ class vision_receiver_node(Node):
     def image_callback(self, msg):
         self.get_logger().info("Image received")
         self.image_msg = msg
+        self.display_image()
 
     def display_image(self):
         if self.image_msg is not None:

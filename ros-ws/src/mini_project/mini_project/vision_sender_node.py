@@ -9,9 +9,13 @@ class Vision_Sender_Node(Node):
     def __init__(self):
         super().__init__("vision_node")
         self.bridge = CvBridge()
+        self.cam = self.create_publisher(Image, "/cam", 10)
         self.device = self.init_depthai_device(rgb_fps=15, resolution=(1920, 1080))  # Set the desired FPS for the RGB camera
         self.viewer_window_name = "Image Viewer"
+        self.image_msg = Image()
         cv2.namedWindow(self.viewer_window_name, cv2.WINDOW_NORMAL)
+
+        self.get_logger().info("Vision_publisher_node started")
 
     def init_depthai_device(self, rgb_fps, resolution):
         pipeline = depthai.Pipeline()
@@ -38,9 +42,9 @@ class Vision_Sender_Node(Node):
             in_rgb = q_rgb.tryGet()
             if in_rgb is not None:
                 frame = in_rgb.getCvFrame()
-                image_msg = self.bridge.cv2_to_imgmsg(frame, "bgr8")
-                image_msg.header.stamp = self.get_clock().now().to_msg()
-                self.cam.publish(image_msg)  # Publish the image
+                self.image_msg = self.bridge.cv2_to_imgmsg(frame, "bgr8")
+                self.image_msg.header.stamp = self.get_clock().now().to_msg()
+                self.cam.publish(self.image_msg)  # Publish the image
 
                 # Display the image in the viewer window
                 cv2.imshow(self.viewer_window_name, frame)
