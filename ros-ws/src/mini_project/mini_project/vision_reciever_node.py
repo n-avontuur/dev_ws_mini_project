@@ -13,8 +13,9 @@ class vision_receiver_node(Node):
         self.get_logger().info("Vision node started")
         self.bridge = CvBridge()
 
-        # Create a window for image display
+        # Create a window for image display and set the window size
         cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("Image", 800, 600)  # Replace 800 and 600 with your desired width and height
 
     def image_callback(self, msg):
         self.get_logger().info("Image received")
@@ -35,6 +36,7 @@ class vision_receiver_node(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    cv2.startWindowThread() 
     node = vision_receiver_node()
 
     try:
