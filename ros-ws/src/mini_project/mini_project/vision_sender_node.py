@@ -23,7 +23,7 @@ class Vision_Sender_Node(Node):
         cam_rgb.setInterleaved(False)
         cam_rgb.setFps(rgb_fps)
         cam_rgb.setBoardSocket(depthai.CameraBoardSocket.RGB)
-        cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+        cam_rgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
         
         xout_rgb = pipeline.create(depthai.node.XLinkOut)
         xout_rgb.setStreamName("rgb")
@@ -48,7 +48,7 @@ class Vision_Sender_Node(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = VisionSenderNode()
+    node = Vision_Sender_Node()
     try:
         node.camera_output()
     except Exception as e:
