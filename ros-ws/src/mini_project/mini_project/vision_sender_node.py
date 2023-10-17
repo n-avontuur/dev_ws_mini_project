@@ -9,9 +9,11 @@ class vision_publisher_node(Node):
     def __init__(self):
         super().__init__("vision_sender_node")
         self.bridge = CvBridge()
+        self.image_msg = Image()
+        self.device = self.init_depthai_device()  # Initialize DepthAI device
         self.cam = self.create_publisher(Image, "/cam", 10)
         self.get_logger().info("Vision_publisher_node started")
-        self.device = self.init_depthai_device()  # Initialize DepthAI device
+        
 
     def init_depthai_device(self):
         pipeline = depthai.Pipeline()
@@ -31,24 +33,24 @@ class vision_publisher_node(Node):
         return device
 
     def capture_and_publish_image(self):
-        q_rgb = self.device.getOutputQueue("rgb", 8, False)
+        q_rgb = self.device.getOutputQueue("rgb")
 
         while rclpy.ok():
             in_rgb = q_rgb.tryGet()
             if in_rgb is not None:
                 frame = in_rgb.getCvFrame()
-                self.publish_image(frame)
+                self.image_msg = self.bridge.cv2_to_imgmsg(frame, "bgr8")
+                self.image_msg.header.stamp = self.get_clock().now().to_msg()
+                self.cam.publish(self.image_msg)  # Publish the image
+                self.get_logger().info("published image")
 
-    def publish_image(self, frame):
-        msg = self.bridge.cv2_to_imgmsg(frame, "bgr8")
-        msg.header.stamp = self.get_clock().now().to_msg()
-        self.cam.publish(msg)
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = vision_publisher_node()
     try:
-        rclpy.spin(node)
+        rclpy.spin(node.capture_and_publish_image())
     except KeyboardInterrupt:
         pass
     finally:
