@@ -1,16 +1,16 @@
-#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
+import atexit
 
 class vision_receiver_node(Node):
     def __init__(self):
         super().__init__("vision_node")
         self.images = self.create_subscription(Image, "/cam", self.image_callback, 10)
         self.image_msg = Image()
-        self.get_logger().info("vision node started")
+        self.get_logger().info("Vision node started")
         self.bridge = CvBridge()
 
         # Create a window for image display
@@ -36,7 +36,7 @@ class vision_receiver_node(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = vision_receiver_node()
-    
+
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
@@ -47,3 +47,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    atexit.register(Node.cleanup)
