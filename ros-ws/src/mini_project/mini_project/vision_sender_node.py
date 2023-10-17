@@ -5,7 +5,7 @@ from cv_bridge import CvBridge
 import depthai
 import cv2
 
-class VisionSenderNode(Node):
+class Vision_Sender_Node(Node):
     def __init__(self):
         super().__init__("vision_node")
         self.bridge = CvBridge()
@@ -19,12 +19,11 @@ class VisionSenderNode(Node):
 
         # Configure the RGB camera with the desired FPS
         cam_rgb = pipeline.create(depthai.node.ColorCamera)
-        cam_rgb.setPreviewSize(*resolution)
+        cam_rgb.setPreviewSize(300,300)
         cam_rgb.setInterleaved(False)
         cam_rgb.setFps(rgb_fps)
         cam_rgb.setBoardSocket(depthai.CameraBoardSocket.RGB)
-        cam_rgb.setAutoExposureMode(depthai.ColorCameraProperties.AutoExposureMode.MANUAL)
-        
+        cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         
         xout_rgb = pipeline.create(depthai.node.XLinkOut)
         xout_rgb.setStreamName("rgb")
