@@ -6,4 +6,4 @@ It's developt for ROS2 - distribution : Humble.
 Run the following command
  - cd ros-ws (Our workspace) 
  - source install/setup.bash 
- - ros2 launch depthai_examples stereo_inertial_node.launch.py
+ - ~ros2 launch depthai_examples stereo_inertial_node.launch.py~
