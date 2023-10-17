@@ -5,7 +5,7 @@ from cv_bridge import CvBridge
 import cv2
 import depthai
 
-class VisionSenderNode(Node):
+class vision_publisher_node(Node):
     def __init__(self):
         super().__init__("vision_sender_node")
         self.bridge = CvBridge()
@@ -47,13 +47,14 @@ class VisionSenderNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = VisionSenderNode()
+    node = vision_publisher_node()
 
     try:
-        node.capture_and_publish_image()
+        rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
+        cv2.destroyAllWindows()
         rclpy.shutdown()
 
 if __name__ == '__main__':
