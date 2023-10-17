@@ -4,6 +4,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import depthai
 import cv2
+from rclpy.time import Time
 
 class Vision_Sender_Node(Node):
     def __init__(self):
@@ -11,9 +12,9 @@ class Vision_Sender_Node(Node):
         self.bridge = CvBridge()
         self.cam = self.create_publisher(Image, "/cam", 10)
         self.device = self.init_depthai_device(rgb_fps=15, resolution=(1920, 1080))  # Set the desired FPS for the RGB camera
-        self.viewer_window_name = "Image Viewer"
         self.image_msg = Image()
-        cv2.namedWindow(self.viewer_window_name, cv2.WINDOW_NORMAL)
+        # self.viewer_window_name = "Image Viewer"
+        # cv2.namedWindow(self.viewer_window_name, cv2.WINDOW_NORMAL)
 
         self.get_logger().info("Vision_publisher_node started")
 
@@ -36,6 +37,9 @@ class Vision_Sender_Node(Node):
         return device
 
     def camera_output(self):
+        previous_time = self.get_clock().now()
+        rate = rclpy.Rate(15)  # Set the desired publishing rate (e.g., 15 Hz)
+
         q_rgb = self.device.getOutputQueue("rgb")
 
         while rclpy.ok():
@@ -47,8 +51,18 @@ class Vision_Sender_Node(Node):
                 self.cam.publish(self.image_msg)  # Publish the image
 
                 # Display the image in the viewer window
-                cv2.imshow(self.viewer_window_name, frame)
-                cv2.waitKey(1)  # Update the display (1 millisecond)
+                #cv2.imshow(self.viewer_window_name, frame)
+                #cv2.waitKey(1)  # Update the display (1 millisecond)
+
+            current_time = self.get_clock().now()
+            time_interval = current_time - previous_time
+            desired_time_interval = Time.from_sec(1.0 / 15)  # Desired rate of 15 Hz
+
+            if time_interval < desired_time_interval:
+                remaining_time = desired_time_interval - time_interval
+                rate.sleep(remaining_time)
+
+            previous_time = current_time
 
 def main(args=None):
     rclpy.init(args=args)
