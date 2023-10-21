@@ -21,7 +21,9 @@ setup(
     entry_points={
         'console_scripts': [
             "vision_sender_node = mini_project.vision_sender_node:main",
-            "vision_reciever_node = mini_project.vision_reciever_node:main"
+            "vision_reciever_node = mini_project.vision_reciever_node:main",
+            "objectdetection_sender_node = mini_project.object_detection_publisher:main",
+            "objectdetection_reciever_node = mini_project.object_detection_subscriber:main"
         ],
     },
 )
