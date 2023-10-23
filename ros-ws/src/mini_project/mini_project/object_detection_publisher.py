@@ -17,10 +17,9 @@ labelMap = [
 
 FRAME_SIZE = (640, 400)
 RESIZE_MAPPING = (300, 300)
+fullFrameTracking = False
 
 class ObjectDepthDetectionNode(Node):
-
-
     def __init__(self):
         super().__init__('object_depth_detection_node')
         self.bridge = CvBridge()
@@ -30,168 +29,172 @@ class ObjectDepthDetectionNode(Node):
 
         self.device = self.init_depthai_device()
 
-        self.fps = 0
-        self.prev_frame_time = 0
-        self.frame_count = 0
-        self.new_frame_time = 0
-        self.status_color = (255, 0, 0)
-
     def init_depthai_device(self):
         pipeline = dai.Pipeline()
-        cam = pipeline.createColorCamera()
-        cam.setPreviewSize(FRAME_SIZE[0], FRAME_SIZE[1])
-        cam.setInterleaved(False)
-        cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+        # Define sources and outputs
+        camRgb = pipeline.create(dai.node.ColorCamera)
+        detectionNetwork = pipeline.create(dai.node.MobileNetDetectionNetwork)
+        objectTracker = pipeline.create(dai.node.ObjectTracker)
+        manip = pipeline.create(dai.node.ImageManip)
 
+        xlinkOut = pipeline.create(dai.node.XLinkOut)
+        trackerOut = pipeline.create(dai.node.XLinkOut)
+        disparity_out = pipeline.createXLinkOut() 
+
+        # Properties
+        camRgb.setPreviewSize(RESIZE_MAPPING[0], RESIZE_MAPPING[1])  # Set the desired image size
+        camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+        camRgb.setInterleaved(False)
+        camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
+        camRgb.setFps(40)
+
+        # Left Mono Camera
         mono_left = pipeline.createMonoCamera()
         mono_left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
         mono_left.setBoardSocket(dai.CameraBoardSocket.LEFT)
+
+        # Right Mono Camera
         mono_right = pipeline.createMonoCamera()
         mono_right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
         mono_right.setBoardSocket(dai.CameraBoardSocket.RIGHT)
 
+        # Stereo Depth
         stereo = pipeline.createStereoDepth()
         stereo.setLeftRightCheck(True)
         stereo.setDepthAlign(dai.CameraBoardSocket.RGB)
 
         mono_left.out.link(stereo.left)
         mono_right.out.link(stereo.right)
-
-        cam.setBoardSocket(dai.CameraBoardSocket.RGB)
-
-        face_spac_det_nn = pipeline.createMobileNetSpatialDetectionNetwork()
-        face_spac_det_nn.setConfidenceThreshold(tresholdConfidence)
-        face_spac_det_nn.setBlobPath(nnPath)
-        face_spac_det_nn.setDepthLowerThreshold(100)
-        face_spac_det_nn.setDepthUpperThreshold(5000)
-
-        face_det_manip = pipeline.createImageManip()
-        face_det_manip.initialConfig.setResize(RESIZE_MAPPING[0], RESIZE_MAPPING[1])
-        face_det_manip.initialConfig.setKeepAspectRatio(False)
-
-        cam.preview.link(face_det_manip.inputImage)
-        face_det_manip.out.link(face_spac_det_nn.input)
-        stereo.depth.link(face_spac_det_nn.inputDepth)
-
-        x_preview_out = pipeline.createXLinkOut()
-        x_preview_out.setStreamName("preview")
-        cam.preview.link(x_preview_out.input)
-
-        det_out = pipeline.createXLinkOut()
-        det_out.setStreamName('det_out')
-        face_spac_det_nn.out.link(det_out.input)
-
-        disparity_out = pipeline.createXLinkOut()
-        disparity_out.setStreamName("disparity")
         stereo.disparity.link(disparity_out.input)
+
+        # MobileNet Detection Network settings
+        detectionNetwork.setBlobPath(nnPath)
+        detectionNetwork.setConfidenceThreshold(0.5)
+        detectionNetwork.input.setBlocking(False)
+
+        # ImageManip to resize frames to 300x300
+        manip.initialConfig.setResize(RESIZE_MAPPING[0], RESIZE_MAPPING[1])
+
+        # Configure the ObjectTracker
+        objectTracker.setDetectionLabelsToTrack([5, 15])  # Track only a person
+        objectTracker.setTrackerType(dai.TrackerType.ZERO_TERM_COLOR_HISTOGRAM)
+        objectTracker.setTrackerIdAssignmentPolicy(dai.TrackerIdAssignmentPolicy.SMALLEST_ID)
+
+        # Linking
+        camRgb.preview.link(manip.inputImage)  # Link the ImageManip for resizing
+        manip.out.link(detectionNetwork.input)  # Link resized image to the detection network
+        objectTracker.passthroughTrackerFrame.link(xlinkOut.input)
+        
+
+        xlinkOut.setStreamName("preview")
+        trackerOut.setStreamName("tracklets")
+        disparity_out.setStreamName("disparity")
+
+        if fullFrameTracking:
+            camRgb.video.link(objectTracker.inputTrackerFrame)
+        else:
+            detectionNetwork.passthrough.link(objectTracker.inputTrackerFrame)
+
+        detectionNetwork.passthrough.link(objectTracker.inputDetectionFrame)
+        detectionNetwork.out.link(objectTracker.inputDetections)
+        objectTracker.out.link(trackerOut.input)
 
         device = dai.Device(pipeline)
         return device
 
     def detect_objects_and_depth(self):
-        bbox = BoundingBox2D()
-        bbox.center = Pose2D()
+        fps = 0
+        counter = 0
+        startTime = time.monotonic()
+        preview = self.device.getOutputQueue("preview", 4, False)
+        tracklets = self.device.getOutputQueue("tracklets", 4, False)
+        disparity_queue = self.device.getOutputQueue("disparity", 4, False)
         while rclpy.ok():
-            q_rgb = self.device.getOutputQueue('preview', maxSize=1, blocking=False)
-            q_depth = self.device.getOutputQueue('disparity', maxSize=1, blocking=False)
-            q_object_detection = self.device.getOutputQueue('det_out', maxSize=1, blocking=False)
+            imgFrame = preview.get()
+            track = tracklets.get()
+            disparity = disparity_queue.get()
+            
 
-            rgb_frame = q_rgb.get().getCvFrame()
-            depth_frame = q_depth.get().getCvFrame()
-            object_detection = q_object_detection.tryGet()
+            counter += 1
+            current_time = time.monotonic()
+            if (current_time - startTime) > 1:
+                fps = counter / (current_time - startTime)
+                counter = 0
+                startTime = current_time
 
-            if object_detection:
-                detections = object_detection.detections
-                for detection in detections:
-                    depth = self.calculate_depth(detection, depth_frame)
+            frame = imgFrame.getCvFrame()
+            depth_frame = disparity.getCvFrame()
+            trackletsData = track.tracklets
+            for t in trackletsData:
+                try:
+                    label = labelMap[t.label]
+                except:
+                    label = t.label
 
-                    bbox.center.position.x = (detection.xmin + detection.xmax) / 2
-                    bbox.center.position.y = (detection.ymin + detection.ymax) / 2
-                    bbox.size_x = detection.xmax - detection.xmin
-                    bbox.size_y = detection.ymax - detection.ymin
+                
+                bbox = self.get_bbox_from_tracklet(t)
+                depth = self.get_object_depth(depth_frame, t)
+                self.object_publisher.publish(bbox)
 
-                    x1 = int(detection.xmin * FRAME_SIZE[0])
-                    y1 = int(detection.ymin * FRAME_SIZE[1])
-                    x2 = int(detection.xmax * FRAME_SIZE[0])
-                    y2 = int(detection.ymax * FRAME_SIZE[1])
+                self.visualize_results(frame, t, label, depth, fps)
 
-                    # Draw the bounding box
-                    cv2.rectangle(rgb_frame, (x1, y1), (x2, y2), self.status_color, 2)
+            cv2.imshow("tracker", frame)
+            cv2.imshow("Depth", depth_frame)
 
-                    # Get the label for the detected object
-                    class_index = detection.label
-                    label = labelMap[class_index]
-
-                    # Overlay the label near the bounding box
-                    label_position = (x1, y1 - 10)  # Adjust the position as needed
-                    cv2.putText(rgb_frame, label, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.status_color)
-
-                    self.display_info(rgb_frame, depth_frame, bbox, depth, 'Object Detected', self.status_color)
-
-            self.frame_count += 1
-            if self.frame_count >= 10:
-                self.new_frame_time = time.time()
-                fps = 1 / (self.new_frame_time - self.prev_frame_time)
-                self.prev_frame_time = self.new_frame_time
-                self.fps = fps
-
-            self.object_publisher.publish(bbox)
-
-            rgb_image_msg = self.bridge.cv2_to_imgmsg(rgb_frame, 'bgr8')
-            self.image_publisher.publish(rgb_image_msg)
-
-            depth_image_msg = self.bridge.cv2_to_imgmsg(depth_frame, 'mono8')
-            self.depth_publisher.publish(depth_image_msg)
-
-            cv2.imshow("Face Cam", rgb_frame)
-            cv2.imshow("Disparity Map", depth_frame)
-
-            key = cv2.waitKey(1)
-            if key == 27:
+            if cv2.waitKey(1) == ord('q'):
                 break
 
-    def calculate_depth(self, detection, depth_frame):
-        xmin = max(0, detection.xmin)
-        ymin = max(0, detection.ymin)
-        xmax = min(detection.xmax, 1)
-        ymax = min(detection.ymax, 1)
+    def get_object_depth(self, disparity_frame, t):
+        roi = t.roi.denormalize(disparity_frame.shape[1], disparity_frame.shape[0])
+        x1 = int(roi.topLeft().x)
+        y1 = int(roi.topLeft().y)
+        x2 = int(roi.bottomRight().x)
+        y2 = int(roi.bottomRight().y)
 
-        x = int(xmin * FRAME_SIZE[0])
-        y = int(ymin * FRAME_SIZE[1])
-        w = int(xmax * FRAME_SIZE[0] - xmin * FRAME_SIZE[0])
-        h = int(ymax * FRAME_SIZE[1] - ymin * FRAME_SIZE[1])
+        # Calculate the average disparity value within the ROI
+        disparity_roi = disparity_frame[y1:y2, x1:x2]
+        mean_disparity = np.mean(disparity_roi)
 
-        bbox = (x, y, w, h)
+        # Use the disparity-to-depth conversion formula
+        baseline = 1  # The baseline of your stereo camera in meters
+        focal_length = 13  # The focal length of your stereo camera
+        depth = mean_disparity / (baseline * focal_length)
 
-        coord_x = detection.spatialCoordinates.x
-        coord_y = detection.spatialCoordinates.y
-        coord_z = detection.spatialCoordinates.z
+        return depth
 
-        coordinates = (coord_x, coord_y, coord_z)
-        return coordinates
 
-    def display_info(self, frame, disp_frame, bbox, coordinates, label, status_color):
-        x_center = int(bbox.center.position.x)
-        y_center = int(bbox.center.position.y)
-        size_x = bbox.size_x
-        size_y = bbox.size_y
+    def get_bbox_from_tracklet(self, tracklet):
+        bbox = BoundingBox2D()
+        x_center = (tracklet.roi.x + tracklet.roi.width) / 2
+        y_center = (tracklet.roi.y + tracklet.roi.height) / 2
+        bbox.center.position.x = x_center
+        bbox.center.position.y = y_center
+        bbox.size_x = tracklet.roi.width
+        bbox.size_y = tracklet.roi.height
+        return bbox
 
-        x1 = int(x_center - size_x / 2)
-        y1 = int(y_center - size_y / 2)
-        x2 = int(x_center + size_x / 2)
-        y2 = int(y_center + size_y / 2)
+    def visualize_results(self, frame, t, label, depth, fps):
+        roi = t.roi.denormalize(frame.shape[1], frame.shape[0])
+        x1 = int(roi.topLeft().x)
+        y1 = int(roi.topLeft().y)
+        x2 = int(roi.bottomRight().x)
+        y2 = int(roi.bottomRight().y)
 
-        cv2.rectangle(frame, (x1, y1), (x2, y2), status_color, 2)
-        cv2.rectangle(frame, (5, 5, 175, 100), (50, 0, 0), -1)
-        cv2.putText(frame, label, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, status_color)
-        cv2.putText(frame, f'FPS: {self.fps:.2f}', (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255))
+        try:
+            label = labelMap[t.label]
+        except:
+            label = t.label
 
-        if coordinates is not None:
-            x, y, w, h = x1, y1, x2 - x1, y2 - y1
-            cv2.rectangle(disp_frame, (x, y), (x + w, y + h), status_color, 2)
-            cv2.rectangle(disp_frame, (5, 5, 185, 50), (50, 0, 0), -1)
-            _, _, coord_z = coordinates
-            cv2.putText(disp_frame, f'Depth: {coord_z}mm', (15, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255))
+        # Display the label, ID, status, and depth
+        cv2.putText(frame, str(label), (x1 + 10, y1 + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
+        cv2.putText(frame, f"ID: {[t.id]}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
+        cv2.putText(frame, t.status.name, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
+        cv2.putText(frame, f"Depth: {depth:.2f} mm", (x1 + 10, y1 + 65), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 255, 0))
+
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), cv2.FONT_HERSHEY_SIMPLEX)
+
+        cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, (0, 255, 0))
+
 
 def main(args=None):
     rclpy.init(args=args)
