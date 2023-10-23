@@ -1,64 +1,61 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from vision_msgs.msg import BoundingBox2D, Pose2D
+from std_msgs.msg import Float32MultiArray
 from cv_bridge import CvBridge
 import cv2
 
-class DisplayObjectsSubscriber(Node):
+class TrackedObjectSubscriber(Node):
     def __init__(self):
-        super().__init__('display_objects_subscriber')
-        self.bridge = CvBridge()
-        self.camera_image = None
-        self.bbox_msg = None
-        self.pose_msg = None
-
+        super().__init__('tracked_object_subscriber')
+        self.tracked_objects_subscription = self.create_subscription(
+            Float32MultiArray,
+            'tracked_objects_info',
+            self.tracked_objects_callback,
+            10
+        )
         self.image_subscription = self.create_subscription(
-            Image, 'camera_image', self.image_callback, 10)
-        self.bbox_subscription = self.create_subscription(
-            BoundingBox2D, 'object_detection_bbox', self.bbox_callback, 10)
-        self.pose_subscription = self.create_subscription(
-            Pose2D, 'object_detection_pose', self.pose_callback, 10)
+            Image,
+            'camera_image',
+            self.image_callback,
+            10
+        )
+        self.bridge = CvBridge()
+        self.image = None
+        self.tracked_objects = []
+
+    def tracked_objects_callback(self, msg):
+        self.tracked_objects = msg.data
 
     def image_callback(self, msg):
-        self.camera_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
-        self.display_objects()
+        self.image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
 
-    def bbox_callback(self, msg):
-        self.bbox_msg = msg
-        self.display_objects()
+    def display_tracked_objects(self):
+        while rclpy.ok():
+            if self.image is not None and self.tracked_objects:
+                frame = self.image.copy()
 
-    def pose_callback(self, msg):
-        self.pose_msg = msg
-        self.display_objects()
+                for i in range(0, len(self.tracked_objects), 7):
+                    label = str(int(self.tracked_objects[i]))
+                    id = int(self.tracked_objects[i + 1])
+                    status = self.tracked_objects[i + 2]
+                    x1 = int(self.tracked_objects[i + 3])
+                    y1 = int(self.tracked_objects[i + 4])
+                    x2 = int(self.tracked_objects[i + 5])
+                    y2 = int(self.tracked_objects[i + 6])
 
-    def display_objects(self):
-        if self.camera_image is not None:
-            display_image = self.camera_image.copy()
+                    cv2.putText(frame, label, (x1 + 10, y1 + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 0, 255))
+                    cv2.putText(frame, f"ID: {id}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 0, 255))
+                    cv2.putText(frame, status, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, (0, 0, 255))
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), cv2.FONT_HERSHEY_SIMPLEX)
 
-            if self.bbox_msg is not None:
-                label = "Object"  # You can customize the label as needed
-                x = self.bbox_msg.center.position.x
-                y = self.bbox_msg.center.position.y
-                width = self.bbox_msg.size_x
-                height = self.bbox_msg.size_y
-
-                cv2.putText(display_image, label, (int(x - width / 2), int(y - height / 2) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                cv2.rectangle(display_image, (int(x - width / 2), int(y - height / 2), int(x + width / 2), int(y + height / 2)), (255, 0, 0), 2)
-
-            if self.pose_msg is not None:
-                x = self.pose_msg.position.x
-                y = self.pose_msg.position.y
-                theta = self.pose_msg.theta
-
-                cv2.putText(display_image, f"X: {x:.2f}, Y: {y:.2f}, Theta: {theta:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-            cv2.imshow("Camera Image with Objects", display_image)
-            cv2.waitKey(1)
+                cv2.imshow('Tracked Objects', frame)
+                cv2.waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)
-    node = DisplayObjectsSubscriber()
+    node = TrackedObjectSubscriber()
+    node.display_tracked_objects()
     rclpy.spin(node)
     rclpy.shutdown()
 

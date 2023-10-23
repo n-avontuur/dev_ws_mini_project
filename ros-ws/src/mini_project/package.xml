@@ -3,15 +3,15 @@
 <package format="3">
   <name>mini_project</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Your package description</description> <!-- Update with an appropriate description -->
   <maintainer email="n.avontuur@outlook.com">n</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache License 2.0</license> <!-- Update with the appropriate license -->
 
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>depthai</depend>
-  <depend>cv2</depend>
+  <depend>my_robot_interfaces</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
@@ -21,7 +21,4 @@
   <export>
     <build_type>ament_python</build_type>
   </export>
-  
-
-
 </package>
