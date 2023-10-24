@@ -5,6 +5,7 @@ from sensor_msgs.msg import Image
 from my_robot_interfaces.msg import CustomObjectInfo
 from cv_bridge import CvBridge
 import cv2
+import time
 
 class ObjectNavigator(Node):
     def __init__(self):
@@ -16,19 +17,32 @@ class ObjectNavigator(Node):
             CustomObjectInfo, 'tracked_objects_info', self.object_info_callback, 10)
         self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.objects_detected = False
-        self.object_positions = []
+        self.object__info = []
 
     def object_info_callback(self, msg):
-        self.object_positions = msg.objects
-        if len(self.object_positions) >= 2:
-            self.objects_detected = True
+        current_time = time.time()
+        for obj in msg.objects:
+            obj_id = obj.id
+
+            if obj_id in self.detected_objects:
+                # Update the detected object's timestamp
+                self.detected_objects[obj_id] = current_time
+            else:
+                # Add the detected object to the dictionary
+                self.detected_objects[obj_id] = current_time
+
+        # Remove undetected objects after a specified timeout
+        objects_to_remove = [obj_id for obj_id, timestamp in self.detected_objects.items() if current_time - timestamp > self.timeout]
+        for obj_id in objects_to_remove:
+            del self.detected_objects[obj_id]
+            
 
     def image_callback(self, msg):
         try:
             if self.objects_detected:
                 # Calculate the goal pose using the positions of the detected objects.
                 # Implement logic to determine the goal pose based on object positions.
-
+    
                 goal_x = (self.object_positions[0].x + self.object_positions[1].x) / 2
                 goal_y = (self.object_positions[0].y + self.object_positions[1].y) / 2
 

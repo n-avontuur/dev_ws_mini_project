@@ -131,8 +131,8 @@ class ObjectDepthDetectionNode(Node):
                 print("object tracked")
 
             # Publish the list of tracked objects
-            # for custom_info in tracked_objects_data:
-            self.tracked_objects_publisher.publish(tracked_objects_data)
+            for custom_info in tracked_objects_data:
+                self.tracked_objects_publisher.publish(custom_info)
 
             rgb_image_msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
             self.image_publisher.publish(rgb_image_msg)

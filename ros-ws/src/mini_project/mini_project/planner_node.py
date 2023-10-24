@@ -4,7 +4,7 @@ from geometry_msgs.msg import Twist
 
 class ControlNode(Node):
     def __init__(self):
-        super().__init__('control_node')
+        super().__init__('planner_node')
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.move_forward()
 
@@ -15,9 +15,9 @@ class ControlNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    control_node = ControlNode()
-    rclpy.spin(control_node)
-    control_node.destroy_node()
+    planner_node = ControlNode()
+    rclpy.spin(planner_node)
+    planner_node.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':

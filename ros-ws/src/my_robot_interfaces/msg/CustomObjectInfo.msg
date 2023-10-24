@@ -1,5 +1,4 @@
 # ros2 interface show CustomObjectInfo.msg
-
 string label
 int32 id
 float32 x1
