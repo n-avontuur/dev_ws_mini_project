@@ -14,7 +14,7 @@ LABEL_MAP = [
     "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
     "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
 ]
-
+10
 class ObjectDepthDetectionNode(Node):
 
     def __init__(self):
@@ -40,7 +40,7 @@ class ObjectDepthDetectionNode(Node):
         camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         camRgb.setInterleaved(False)
         camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-        camRgb.setFps(40)
+        camRgb.setFps(15)
 
         # Configure the detection network
         detectionNetwork.setBlobPath(NN_PATH)
@@ -88,50 +88,60 @@ class ObjectDepthDetectionNode(Node):
             tracked_objects_data = []
 
             for t in trackletsData:
-                # Process each detected object
                 roi = t.roi.denormalize(frame.shape[1], frame.shape[0])
-                x1, y1 = int(roi.topLeft().x), int(roi.topLeft().y)
-                x2, y2 = int(roi.bottomRight().x), int(roi.bottomRight().y)
-                label = LABEL_MAP[t.label] if 0 <= t.label < len(LABEL_MAP) else "Unknown"
+                x1 = int(roi.topLeft().x)
+                y1 = int(roi.topLeft().y)
+                x2 = int(roi.bottomRight().x)
+                y2 = int(roi.bottomRight().y)
+
+                try:
+                    label = LABEL_MAP[t.label]
+                except:
+                    label = t.label
+
+                cv2.putText(frame, str(label), (x1 + 10, y1 + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+                cv2.putText(frame, f"ID: {[t.id]}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+                cv2.putText(frame, t.status.name, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, cv2.FONT_HERSHEY_SIMPLEX)
 
                 # Calculate depth using spatialCoordinates
+                spatial_coord_x = t.spatialCoordinates.x
+                spatial_coord_y = t.spatialCoordinates.y
                 spatial_coord_z = t.spatialCoordinates.z
 
                 # You may need to adjust these parameters based on your calibration
                 baseline = 100  # Example baseline in millimeters
                 focal_length = 477  # Example focal length in pixels
 
-                # Convert the depth_value to a float
-                depth_value = float(baseline * focal_length) / (spatial_coord_z + 1e-6)
+                # Calculate depth using the formula
+                depth_value = (baseline * focal_length) / (spatial_coord_z + 1e-6)  # Adding a small value to prevent division by zero
 
-                # Convert the depth_value to a float
-                depth_value = float(baseline * focal_length) / (spatial_coord_z + 1e-6)
+                # Create an instance of CustomObjectInfo and populate its fields
+                custom_info = CustomObjectInfo()
+                custom_info.label = str(label)
+                custom_info.id = t.id
+                custom_info.x1 = float(x1)
+                custom_info.y1 = float(y1)
+                custom_info.x2 = float(x2)
+                custom_info.y2 = float(y2)
+                custom_info.depth_value = depth_value
 
-                # Append real numbers (floats) to the tracked_objects_data list
-                tracked_objects_data.append(label)
-                tracked_objects_data.append(t.id)
-                tracked_objects_data.append(float(x1))
-                tracked_objects_data.append(float(y1))
-                tracked_objects_data.append(float(x2))
-                tracked_objects_data.append(float(y2))
-                tracked_objects_data.append(depth_value)
+                tracked_objects_data.append(custom_info)
 
+                print("object tracked")
 
-
-            tracked_objects = CustomObjectInfo(data=tracked_objects_data)
-            self.tracked_objects_publisher.publish(tracked_objects)
+            # Publish the list of tracked objects
+            # for custom_info in tracked_objects_data:
+            self.tracked_objects_publisher.publish(tracked_objects_data)
 
             rgb_image_msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
             self.image_publisher.publish(rgb_image_msg)
 
-            cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
-            cv2.imshow("tracker", frame)
-            cv2.waitKey(1)
 
 def main(args=None):
     rclpy.init(args=args)
     node = ObjectDepthDetectionNode()
-    node.detect_objects_and_depth()  # Call the detection loop
+    node.detect_objects_and_depth()
     rclpy.shutdown()
 
 if __name__ == '__main__':
