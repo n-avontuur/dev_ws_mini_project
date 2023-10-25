@@ -93,16 +93,7 @@ class ObjectDepthDetectionNode(Node):
                 y1 = int(roi.topLeft().y)
                 x2 = int(roi.bottomRight().x)
                 y2 = int(roi.bottomRight().y)
-
-                try:
-                    label = LABEL_MAP[t.label]
-                except:
-                    label = t.label
-
-                cv2.putText(frame, str(label), (x1 + 10, y1 + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-                cv2.putText(frame, f"ID: {[t.id]}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-                cv2.putText(frame, t.status.name, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, cv2.FONT_HERSHEY_SIMPLEX)
+                label = LABEL_MAP[t.label]
 
                 # Calculate depth using spatialCoordinates
                 spatial_coord_x = t.spatialCoordinates.x
