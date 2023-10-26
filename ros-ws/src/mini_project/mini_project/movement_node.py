@@ -66,7 +66,7 @@ class movement_node(Node):
             print("closes object")
             self.cmd_pub.publish(cmd_msg)
 
-            exit
+            return
 
             if self.detected_objects:
                 # Initialize variables to keep track of the closest object and its depth.
