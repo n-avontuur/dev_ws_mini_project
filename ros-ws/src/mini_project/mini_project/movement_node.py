@@ -58,14 +58,6 @@ class movement_node(Node):
         print("move robot")
         try:
 
-            cmd_msg = Twist()
-            cmd_msg.linear.x = 0.21
-            cmd_msg.angular.z = 0.0
-            self.cmd_pub.publish(cmd_msg)
-            print("closes object")
-
-            return
-
             if self.detected_objects:
                 # Initialize variables to keep track of the closest object and its depth.
                 closest_obj = None
@@ -73,13 +65,18 @@ class movement_node(Node):
 
                 for obj_id, obj_data in self.detected_objects.items():
                     depth = obj_data['depth_value']
+                    print("depth: " & str(depth))
 
                     # Check if the current object is closer than the previously found closest object.
                     if depth < min_distance:
                         min_distance = depth
                         closest_obj = obj_data
 
-                if closest_obj is not None:
+                    if closest_obj is None:
+                        self.move_cmd(0,0)
+                        print("stop robot no objects")
+                        return
+                    
                     x1 = closest_obj['x1']
                     x2 = closest_obj['x2']
                     depth = closest_obj['depth_value']
@@ -89,27 +86,20 @@ class movement_node(Node):
                     goal_depth = depth
 
                     # Calculate linear and angular velocities to navigate towards the closest object.
-                    cmd_msg = Twist()
-                    cmd_msg.linear.x = 0.22
-                    cmd_msg.angular.z = 0.0
-                    print("closes object")
-                    self.cmd_pub.publish(cmd_msg)
-                else:
-                    # No suitable objects found, stop the robot.
-                    cmd_msg = Twist()
-                    cmd_msg.linear.x = 0.0
-                    cmd_msg.angular.z = 0.0
-                    print("stop robot no objects")
-                    self.cmd_pub.publish(cmd_msg)
+                    self.move_cmd(0.22, 0)
+            
             else:
                 # No objects detected, stop the robot.
-                cmd_msg = Twist()
-                cmd_msg.linear.x = 0.0
-                cmd_msg.angular.z = 0.0
-                self.cmd_pub.publish(cmd_msg)
+                self.move_cmd(0,0)
 
         except Exception as e:
             self.get_logger().error(f"Error processing image: {str(e)}")
+    
+    def move_cmd(self, x, z):
+        cmd_msg = Twist()
+        cmd_msg.linear.x = x
+        cmd_msg.angular.z = z
+
 
 
 
