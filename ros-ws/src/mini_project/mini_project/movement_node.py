@@ -76,8 +76,8 @@ class movement_node(Node):
 
                     # Calculate linear and angular velocities to navigate towards the closest object.
                     cmd_msg = Twist()
-                    cmd_msg.linear.x = self.map_value(goal_depth - 1.0, 0.0, 1.0, 0.0, 0.22)
-                    cmd_msg.angular.z = self.map_value(goal_x - 0.5, -0.5, 0.5, 0.0, 2.84)
+                    cmd_msg.linear.x = self.map_value(goal_depth, 0.0, 1.0, 0.0, 0.22)
+                    cmd_msg.angular.z = self.map_value(goal_x, -0.5, 0.5, 0.0, 2.84)
                     print("closes object")
                     self.cmd_pub.publish(cmd_msg)
                 else:
