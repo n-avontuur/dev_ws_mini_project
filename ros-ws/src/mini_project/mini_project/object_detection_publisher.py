@@ -11,7 +11,7 @@ from my_robot_interfaces.msg import CustomObjectInfo
 
 # Define your constants
 THRESHOLD_CONFIDENCE = 0.0
-NN_PATH = "/home/n/dev_ws_mini_project/mobilenet-ssd_openvino_2021.2_6shave.blob"
+NN_PATH = "/home/niels/dev_ws_mini_project/mobilenet-ssd_openvino_2021.2_6shave.blob"
 LABEL_MAP = [
     "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
     "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
@@ -41,7 +41,7 @@ class ObjectDepthDetectionNode(Node):
         camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         camRgb.setInterleaved(False)
         camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.BGR)
-        camRgb.setFps(30)
+        camRgb.setFps(10)
 
         # Configure the detection network
         detectionNetwork.setBlobPath(NN_PATH)
@@ -141,6 +141,7 @@ class ObjectDepthDetectionNode(Node):
             self.depth_publisher.publish(depth_image_msg)
             rgb_image_msg = self.bridge.cv2_to_imgmsg(frame, 'bgr8')
             self.image_publisher.publish(rgb_image_msg)
+
             
     def get_object_depth(self, disparity_frame, t):
         roi = t.roi.denormalize(disparity_frame.shape[1], disparity_frame.shape[0])
@@ -166,7 +167,9 @@ class ObjectDepthDetectionNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = ObjectDepthDetectionNode()
+    rate = node.create_rate(2)
     node.detect_objects_and_depth()
+    rate.sleep()  
     rclpy.shutdown()
 
 if __name__ == '__main__':

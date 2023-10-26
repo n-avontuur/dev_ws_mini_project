@@ -22,7 +22,7 @@ setup(
         'console_scripts': [
             'objectdetection_sender_node = mini_project.object_detection_publisher:main',
             'objectdetection_reciever_node = mini_project.object_detection_subscriber:main',
-            'movement_node = mini_project.Movement_node:main',
+            'movement_node = mini_project.movement_node:main',
             'planner_node = mini_project.planner_node:main',
         ],
     },
