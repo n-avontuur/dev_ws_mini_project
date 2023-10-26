@@ -27,14 +27,10 @@ class movement_node(Node):
             status = msg.status
 
             if status == "removed" :
-                now = time.time()
                 # Remove the object with the specified ID from the dictionary if it exists.
                 if obj_id in self.detected_objects:
-                    if ((obj_id["start_remove_time"] - now)> 5):
-                        del self.detected_objects[obj_id]
+                    del self.detected_objects[obj_id]
                         
-                    if (obj_id["start_remove_time"] == 0 ):
-                        self.detected_objects[obj_id]["start_remove_time"] = now
             else:
                 # Store the object information in the dictionary.
                 self.detected_objects[obj_id] = {
