@@ -61,7 +61,7 @@ class movement_node(Node):
 
                 for obj_id, obj_data in self.detected_objects.items():
                     depth = obj_data['depth_value']
-                    print("depth: " & str(depth))
+                    print("depth: ", str(depth))
 
                     # Check if the current object is closer than the previously found closest object.
                     if depth < min_distance:
