@@ -84,7 +84,7 @@ class movement_node(Node):
                     # Calculate linear and angular velocities to navigate towards the closest object.
                     cmd_msg = Twist()
                     cmd_msg.linear.x = 0.22
-                    cmd_msg.angular.z = 0
+                    cmd_msg.angular.z = 0.0
                     print("closes object")
                     self.cmd_pub.publish(cmd_msg)
                 else:
