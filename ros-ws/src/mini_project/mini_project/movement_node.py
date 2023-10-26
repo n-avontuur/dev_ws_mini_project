@@ -14,7 +14,7 @@ class movement_node(Node):
     def __init__(self):
         super().__init__('movement_node')
         self.bridge = CvBridge()
-        self.image_subscription = self.create_subscription(Image, 'camera_image', self.image_callback, 10)
+        #self.image_subscription = self.create_subscription(Image, 'camera_image', self.image_callback, 10)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.object_info_subscription = self.create_subscription( CustomObjectInfo, 'tracked_objects_info', self.object_info_callback, 10)
         self.detected_objects = {}
