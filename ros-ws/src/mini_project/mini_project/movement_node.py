@@ -95,6 +95,7 @@ class movement_node(Node):
         cmd_msg = Twist()
         cmd_msg.linear.x = float(x)
         cmd_msg.angular.z = float(z)
+        self.cmd_pub.publish(cmd_msg)
 
 
 
