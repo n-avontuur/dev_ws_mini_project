@@ -59,8 +59,8 @@ class movement_node(Node):
         try:
 
             cmd_msg = Twist()
-            cmd_msg.linear.x = "0.22"
-            cmd_msg.angular.z = "0.0"
+            cmd_msg.linear.x = 0.21
+            cmd_msg.angular.z = 0.0
             self.cmd_pub.publish(cmd_msg)
             print("closes object")
 
