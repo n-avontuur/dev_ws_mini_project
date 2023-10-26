@@ -17,6 +17,7 @@ class movement_node(Node):
         self.detected_objects = {}
 
     def object_info_callback(self, msg):
+        print("object recieved")
         if msg is not None:
             obj_id = msg.id
             label = msg.label
@@ -38,8 +39,14 @@ class movement_node(Node):
                     "y2": msg.y2,
                     "depth_value": msg.depth_value
                 }
-
+        self.move_robot_cmd()
+        
     def image_callback(self, msg):
+        print("image recieved")
+        self.move_robot_cmd()
+
+    def move_robot_cmd(self):
+        print("move robot")
         try:
             if self.detected_objects:
                 # Initialize variables to keep track of the closest object and its depth.
