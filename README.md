@@ -15,8 +15,8 @@ PC install : pc-install.sh
 ## Run Launch files
 
 Run the following command
- - cd ros-ws (Our workspace) 
- - source install/setup.bash 
+ - ~cd ros-ws (Our workspace) ~
+ - ~source install/setup.bash ~
  - ~ros2 launch depthai_examples stereo_inertial_node.launch.py~
 
 
