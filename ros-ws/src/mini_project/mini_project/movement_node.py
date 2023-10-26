@@ -4,12 +4,10 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
 from my_robot_interfaces.msg import CustomObjectInfo
 from cv_bridge import CvBridge
-import cv2
-import time
 
-class ObjectNavigator(Node):
+class movement_node(Node):
     def __init__(self):
-        super().__init__('object_navigator')
+        super().__init__('movement_node')
         self.bridge = CvBridge()
         self.image_subscription = self.create_subscription(
             Image, 'camera_image', self.image_callback, 10)
@@ -17,34 +15,37 @@ class ObjectNavigator(Node):
             CustomObjectInfo, 'tracked_objects_info', self.object_info_callback, 10)
         self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.detected_objects = {}
-        self.timeout = 10.0
 
     def object_info_callback(self, msg):
-        current_time = time.time()
-        objects_to_remove = []
-
-        for obj in msg.objects:
-            obj_id = obj.id
-            label = obj.label
-            status = obj.status
+        if msg is not None:
+            obj_id = msg.id
+            label = msg.label
+            status = msg.status
 
             if status == "removed":
-                objects_to_remove.append(obj_id)
+                # If an object with this ID exists, remove it from the list.
+                if obj_id in self.detected_objects:
+                    self.detected_objects[obj_id].clear()
             else:
-                self.detected_objects[obj_id] = {
+                # Create a list for the object's information if it doesn't exist.
+                if obj_id not in self.detected_objects:
+                    self.detected_objects[obj_id] = []
+
+                # Append the object information to the list.
+                self.detected_objects[obj_id].append({
                     "label": label,
                     "status": status,
                     "id": obj_id,
-                    "x1": obj.x1,
-                    "y1": obj.y1,
-                    "x2": obj.x2,
-                    "y2": obj.y2,
-                    "depth_value": obj.depth_value
-                }
+                    "x1": msg.x1,
+                    "y1": msg.y1,
+                    "x2": msg.x2,
+                    "y2": msg.y2,
+                    "depth_value": msg.depth_value
+                })
 
-        for obj_id in objects_to_remove:
-            if obj_id in self.detected_objects:
-                del self.detected_objects[obj_id]
+
+
+
 
     def image_callback(self, msg):
         try:
@@ -97,9 +98,10 @@ class ObjectNavigator(Node):
         except Exception as e:
             self.get_logger().error(f"Error processing image: {str(e)}")
 
+
 def main(args=None):
     rclpy.init(args=args)
-    node = ObjectNavigator()
+    node = movement_node()
     rclpy.spin(node)
 
 if __name__ == '__main__':

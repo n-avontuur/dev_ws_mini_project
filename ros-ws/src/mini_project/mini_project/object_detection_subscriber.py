@@ -40,20 +40,20 @@ class DisplayObjectsSubscriber(Node):
     def display_objects(self):
         if self.camera_image is not None:
             display_image = self.camera_image.copy()
-            disparity_image = self.disparity_image.copy()
+            
 
             if self.tracked_object is not None:
                 if self.tracked_object.status != "REMOVED":
                     t = self.tracked_object
                     if t.label:
                         label = str(t.label)
-                    if t.id :
-                        id = str(t.id)
-                        cv2.putText(display_image, f"ID: {id}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
                     if map(int, [t.x1, t.y1, t.x2, t.y2]):
                         x1, y1, x2, y2 = map(int, [t.x1, t.y1, t.x2, t.y2])
                         cv2.putText(display_image, label, (x1 + 10, y1 + 20), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
                         cv2.rectangle(display_image, (x1, y1), (x2, y2), (255, 0, 0), 2) 
+                    if t.id :
+                        id = str(t.id)
+                        cv2.putText(display_image, f"ID: {id}", (x1 + 10, y1 + 35), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
                     if t.status :
                         status = str(t.status)
                         cv2.putText(display_image, status, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
@@ -62,7 +62,9 @@ class DisplayObjectsSubscriber(Node):
                         cv2.putText(display_image, depth_value, (x1 + 10, y1 + 65), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
 
             cv2.imshow("Camera Image with Objects", display_image)
-            #cv2.imshow("disparity_image", disparity_image)
+            # if self.disparity_image is not None:
+            #     disparity_image = self.disparity_image.copy()
+            #     cv2.imshow("disparity_image", disparity_image)
             cv2.waitKey(1)
 
 def main(args=None):

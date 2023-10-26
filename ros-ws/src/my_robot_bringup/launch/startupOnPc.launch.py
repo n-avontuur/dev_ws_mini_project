@@ -23,14 +23,12 @@ def generate_launch_description():
             package='mini_project',
             executable='movement_node',
             name='movement_node',
-            output='screen'
         )
 
     planner_node =   Node(
             package='mini_project',
             executable='planner_node',
             name='planner_node',
-            output='screen'
         )
     
     ld.add_action(publisher_node)
