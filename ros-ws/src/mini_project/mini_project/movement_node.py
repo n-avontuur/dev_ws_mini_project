@@ -93,8 +93,8 @@ class movement_node(Node):
     
     def move_cmd(self, x, z):
         cmd_msg = Twist()
-        cmd_msg.linear.x = x
-        cmd_msg.angular.z = z
+        cmd_msg.linear.x = float(x)
+        cmd_msg.angular.z = float(z)
 
 
 
