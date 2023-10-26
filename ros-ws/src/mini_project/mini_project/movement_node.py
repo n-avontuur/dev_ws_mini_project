@@ -59,6 +59,15 @@ class movement_node(Node):
     def move_robot_cmd(self):
         print("move robot")
         try:
+
+            cmd_msg = Twist()
+            cmd_msg.linear.x = 0.22
+            cmd_msg.angular.z = 0.0
+            print("closes object")
+            self.cmd_pub.publish(cmd_msg)
+
+            exit
+
             if self.detected_objects:
                 # Initialize variables to keep track of the closest object and its depth.
                 closest_obj = None
