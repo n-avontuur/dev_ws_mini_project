@@ -7,10 +7,6 @@ from cv_bridge import CvBridge
 import time
 
 class movement_node(Node):
-
-    # Define the map_value function as a lambda function
-    map_value = lambda value, in_min, in_max, out_min, out_max: (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
     def __init__(self):
         super().__init__('movement_node')
         self.bridge = CvBridge()
@@ -20,7 +16,7 @@ class movement_node(Node):
         self.detected_objects = {}
 
     def object_info_callback(self, msg):
-        print("object recieved")
+        print("object received")
         if msg is not None:
             obj_id = msg.id
             label = msg.label
@@ -47,8 +43,10 @@ class movement_node(Node):
         self.move_robot_cmd()
 
     def image_callback(self, msg):
-        print("image recieved")
+        print("image received")
         self.move_robot_cmd()
+
+
 
     def move_robot_cmd(self):
         print("move robot")
@@ -58,7 +56,7 @@ class movement_node(Node):
                 # Initialize variables to keep track of the closest object and its depth.
                 closest_obj = None
                 min_distance = float('inf')
-
+    
                 for obj_id, obj_data in self.detected_objects.items():
                     depth = obj_data['depth_value']
                     print("depth: ", str(depth))
@@ -76,11 +74,17 @@ class movement_node(Node):
                     x1 = closest_obj['x1']
                     x2 = closest_obj['x2']
                     depth = closest_obj['depth_value']
-
+    
                     # Calculate the desired goal position based on the closest object's depth and position.
                     goal_x = (x1 + x2) / 2
                     goal_depth = depth
-
+    
+                    # Limit the values of goal_depth and goal_x
+                    max_linear_x = 0.22
+                    max_angular_z = 2.84
+                    goal_depth = min(max_linear_x, goal_depth)
+                    goal_x = min(max_angular_z, goal_x)
+    
                     # Calculate linear and angular velocities to navigate towards the closest object.
                     self.move_cmd(0.22, 0)
             
