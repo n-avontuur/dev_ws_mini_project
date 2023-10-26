@@ -4,6 +4,7 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
 from my_robot_interfaces.msg import CustomObjectInfo
 from cv_bridge import CvBridge
+import time
 
 class movement_node(Node):
 
@@ -27,10 +28,15 @@ class movement_node(Node):
             label = msg.label
             status = msg.status
 
-            if status == "removed":
+            if status == "removed" :
+                now = time.time()
                 # Remove the object with the specified ID from the dictionary if it exists.
                 if obj_id in self.detected_objects:
-                    del self.detected_objects[obj_id]
+                    if ((obj_id["start_remove_time"] - now)> 5):
+                        del self.detected_objects[obj_id]
+                        
+                    if (obj_id["start_remove_time"] == 0 ):
+                        self.detected_objects[obj_id]["start_remove_time"] = now
             else:
                 # Store the object information in the dictionary.
                 self.detected_objects[obj_id] = {
@@ -41,7 +47,8 @@ class movement_node(Node):
                     "y1": msg.y1,
                     "x2": msg.x2,
                     "y2": msg.y2,
-                    "depth_value": msg.depth_value
+                    "depth_value": msg.depth_value,
+                    "start_remove_time" : 0
                 }
         self.move_robot_cmd()
 
@@ -76,8 +83,8 @@ class movement_node(Node):
 
                     # Calculate linear and angular velocities to navigate towards the closest object.
                     cmd_msg = Twist()
-                    cmd_msg.linear.x = self.map_value(goal_depth, 0.0, 1.0, 0.0, 0.22)
-                    cmd_msg.angular.z = self.map_value(goal_x, -0.5, 0.5, 0.0, 2.84)
+                    cmd_msg.linear.x = 0.22
+                    cmd_msg.angular.z = 0
                     print("closes object")
                     self.cmd_pub.publish(cmd_msg)
                 else:
@@ -97,19 +104,6 @@ class movement_node(Node):
         except Exception as e:
             self.get_logger().error(f"Error processing image: {str(e)}")
 
-        def remapValues(self,linear_velocity,angular_velocity):
-            # Define the map_value function as a lambda function
-            map_value = lambda value, in_min, in_max, out_min, out_max: (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
-
-            # Define the input and output value ranges
-            linear_velocity_min, linear_velocity_max = 0.0, 0.22
-            angular_velocity_min, angular_velocity_max = 0.0, 2.84
-
-            # Remap the linear and angular velocities
-            remapped_linear_velocity = map_value(linear_velocity, 0.0, 1.0, linear_velocity_min, linear_velocity_max)
-            remapped_angular_velocity = map_value(angular_velocity, 0.0, 1.0, angular_velocity_min, angular_velocity_max)
-            return remapped_linear_velocity, remapped_angular_velocity
 
 
 def main(args=None):
