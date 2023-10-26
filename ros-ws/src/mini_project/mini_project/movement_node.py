@@ -6,6 +6,10 @@ from my_robot_interfaces.msg import CustomObjectInfo
 from cv_bridge import CvBridge
 
 class movement_node(Node):
+
+    # Define the map_value function as a lambda function
+    map_value = lambda value, in_min, in_max, out_min, out_max: (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
     def __init__(self):
         super().__init__('movement_node')
         self.bridge = CvBridge()
@@ -40,7 +44,7 @@ class movement_node(Node):
                     "depth_value": msg.depth_value
                 }
         self.move_robot_cmd()
-        
+
     def image_callback(self, msg):
         print("image recieved")
         self.move_robot_cmd()
@@ -72,15 +76,16 @@ class movement_node(Node):
 
                     # Calculate linear and angular velocities to navigate towards the closest object.
                     cmd_msg = Twist()
-                    cmd_msg.linear.x = 0.1 * (goal_depth - 1.0)  # Adjust linear velocity based on depth
-                    cmd_msg.angular.z = 0.1 * (goal_x - 0.5)  # Adjust angular velocity based on x position
-
+                    cmd_msg.linear.x = self.map_value(goal_depth - 1.0, 0.0, 1.0, 0.0, 0.22)
+                    cmd_msg.angular.z = self.map_value(goal_x - 0.5, -0.5, 0.5, 0.0, 2.84)
+                    print("closes object")
                     self.cmd_pub.publish(cmd_msg)
                 else:
                     # No suitable objects found, stop the robot.
                     cmd_msg = Twist()
                     cmd_msg.linear.x = 0.0
                     cmd_msg.angular.z = 0.0
+                    print("stop robot no objects")
                     self.cmd_pub.publish(cmd_msg)
             else:
                 # No objects detected, stop the robot.
@@ -91,6 +96,20 @@ class movement_node(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error processing image: {str(e)}")
+
+        def remapValues(self,linear_velocity,angular_velocity):
+            # Define the map_value function as a lambda function
+            map_value = lambda value, in_min, in_max, out_min, out_max: (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+
+            # Define the input and output value ranges
+            linear_velocity_min, linear_velocity_max = 0.0, 0.22
+            angular_velocity_min, angular_velocity_max = 0.0, 2.84
+
+            # Remap the linear and angular velocities
+            remapped_linear_velocity = map_value(linear_velocity, 0.0, 1.0, linear_velocity_min, linear_velocity_max)
+            remapped_angular_velocity = map_value(angular_velocity, 0.0, 1.0, angular_velocity_min, angular_velocity_max)
+            return remapped_linear_velocity, remapped_angular_velocity
 
 
 def main(args=None):
