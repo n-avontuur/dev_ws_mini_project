@@ -14,12 +14,11 @@ class movement_node(Node):
     def __init__(self):
         super().__init__('movement_node')
         self.bridge = CvBridge()
-        self.image_subscription = self.create_subscription(
-            Image, 'camera_image', self.image_callback, 10)
-        self.object_info_subscription = self.create_subscription(
-            CustomObjectInfo, 'tracked_objects_info', self.object_info_callback, 10)
-        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.object_info_subscription = self.create_subscription( CustomObjectInfo, 'tracked_objects_info', self.object_info_callback, 10)
         self.detected_objects = {}
+
+        self.twist_msg = Twist()
 
     def object_info_callback(self, msg):
         print("object recieved")
@@ -60,11 +59,10 @@ class movement_node(Node):
         print("move robot")
         try:
 
-            cmd_msg = Twist()
-            cmd_msg.linear.x = 0.22
-            cmd_msg.angular.z = 0.0
+            self.twist_msg.linear.x = 0.22
+            self.twist_msg.angular.z = 0.0
+            self.cmd_pub.publish(self.twist_msg)
             print("closes object")
-            self.cmd_pub.publish(cmd_msg)
 
             return
 
