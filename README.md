@@ -3,10 +3,10 @@ This is a project for Avans hogeschool, mechatronica, minur robotics.
 It's developt for ROS2 - distribution : Humble.
 
 ## Prep Project
-For this project you should use Ubuntu 22.04 and ROS2 distribution Humble.
-To make this easy the only thing you need to do is Flash Ubuntu 22.04 on a sd and pc.
-Clone repository and start the dedicated install file, found in the folder Installation.
-RPI install : RPI-install.sh
+For this project you should use Ubuntu 22.04 and ROS2 distribution Humble.\
+To make this easy the only thing you need to do is Flash Ubuntu 22.04 on a sd and pc.\
+Clone repository and start the dedicated install file, found in the folder Installation.\
+RPI install : RPI-install.sh\
 PC install : pc-install.sh
 
 
