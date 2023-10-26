@@ -1,6 +1,9 @@
 ros-ws/build/
 ros-ws/install/
 ros-ws/log/
+build/
+install/
+log/
 build/.built_by
 build/COLCON_IGNORE
 build/mini_project/colcon_build.rc
