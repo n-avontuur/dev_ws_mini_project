@@ -16,45 +16,81 @@ class ObjectNavigator(Node):
         self.object_info_subscription = self.create_subscription(
             CustomObjectInfo, 'tracked_objects_info', self.object_info_callback, 10)
         self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.objects_detected = False
-        self.object__info = []
+        self.detected_objects = {}
+        self.timeout = 10.0
 
     def object_info_callback(self, msg):
         current_time = time.time()
+        objects_to_remove = []
+
         for obj in msg.objects:
             obj_id = obj.id
+            label = obj.label
+            status = obj.status
 
-            if obj_id in self.detected_objects:
-                # Update the detected object's timestamp
-                self.detected_objects[obj_id] = current_time
+            if status == "removed":
+                objects_to_remove.append(obj_id)
             else:
-                # Add the detected object to the dictionary
-                self.detected_objects[obj_id] = current_time
+                self.detected_objects[obj_id] = {
+                    "label": label,
+                    "status": status,
+                    "id": obj_id,
+                    "x1": obj.x1,
+                    "y1": obj.y1,
+                    "x2": obj.x2,
+                    "y2": obj.y2,
+                    "depth_value": obj.depth_value
+                }
 
-        # Remove undetected objects after a specified timeout
-        objects_to_remove = [obj_id for obj_id, timestamp in self.detected_objects.items() if current_time - timestamp > self.timeout]
         for obj_id in objects_to_remove:
-            del self.detected_objects[obj_id]
-            
+            if obj_id in self.detected_objects:
+                del self.detected_objects[obj_id]
 
     def image_callback(self, msg):
         try:
-            if self.objects_detected:
-                # Calculate the goal pose using the positions of the detected objects.
-                # Implement logic to determine the goal pose based on object positions.
-    
-                goal_x = (self.object_positions[0].x + self.object_positions[1].x) / 2
-                goal_y = (self.object_positions[0].y + self.object_positions[1].y) / 2
+            if self.detected_objects:
+                # Calculate the desired goal position using depth and x information.
+                # In this example, we'll navigate between the two closest objects.
 
-                cmd_msg = Twist()
-                # Calculate linear and angular velocities to navigate to the goal pose.
-                cmd_msg.linear.x = 0.1  # Adjust linear velocity as needed
-                cmd_msg.angular.z = 0.1 * (goal_x - 0.5)  # Adjust angular velocity as needed
+                closest_obj1 = None
+                closest_obj2 = None
+                min_distance = float('inf')
 
-                self.cmd_pub.publish(cmd_msg)
+                for obj_id, obj_data in self.detected_objects.items():
+                    x = (obj_data['x1'] + obj_data['x2']) / 2
+                    depth = obj_data['depth_value']
+
+                    if abs(x - 0.5) < min_distance:
+                        min_distance = abs(x - 0.5)
+                        closest_obj2 = closest_obj1
+                        closest_obj1 = obj_data
+
+                if closest_obj1 is not None and closest_obj2 is not None:
+                    x1 = (closest_obj1['x1'] + closest_obj1['x2']) / 2
+                    x2 = (closest_obj2['x1'] + closest_obj2['x2']) / 2
+                    depth1 = closest_obj1['depth_value']
+                    depth2 = closest_obj2['depth_value']
+
+                    # Calculate the desired goal position as the midpoint between the two objects.
+                    goal_x = (x1 + x2) / 2
+                    goal_depth = (depth1 + depth2) / 2
+
+                    # Calculate linear and angular velocities to navigate between the rows.
+                    cmd_msg = Twist()
+                    cmd_msg.linear.x = 0.1 * (goal_depth - 1.0)  # Adjust linear velocity based on depth
+                    cmd_msg.angular.z = 0.1 * (goal_x - 0.5)  # Adjust angular velocity based on x position
+
+                    self.cmd_pub.publish(cmd_msg)
+                else:
+                    # No suitable objects found to navigate between, stop the robot.
+                    cmd_msg = Twist()
+                    cmd_msg.linear.x = 0.0
+                    cmd_msg.angular.z = 0.0
+                    self.cmd_pub.publish(cmd_msg)
             else:
+                # No objects detected, stop the robot.
                 cmd_msg = Twist()
-                cmd_msg.linear.x = 0.0  # Stop the robot when no objects are detected.
+                cmd_msg.linear.x = 0.0
                 cmd_msg.angular.z = 0.0
                 self.cmd_pub.publish(cmd_msg)
 
