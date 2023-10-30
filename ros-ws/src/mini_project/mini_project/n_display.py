@@ -6,15 +6,11 @@ from my_robot_interfaces.msg import CustomObjectInfo
 from cv_bridge import CvBridge
 import cv2
 
-LABEL_MAP = [
-    "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
-    "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
-]
 
-class DisplayObjectsSubscriber(Node):
+class display(Node):
     
     def __init__(self):
-        super().__init__('display_objects_subscriber')
+        super().__init__('display')
         self.bridge = CvBridge()
         self.camera_image = None
         self.tracked_object = None
@@ -95,7 +91,7 @@ class DisplayObjectsSubscriber(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = DisplayObjectsSubscriber()
+    node = display()
     rclpy.spin(node)
     rclpy.shutdown()
 

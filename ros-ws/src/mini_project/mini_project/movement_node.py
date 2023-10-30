@@ -7,6 +7,7 @@ from cv_bridge import CvBridge
 import time
 
 class movement_node(Node):
+    cmd_msg = Twist()
     def __init__(self):
         super().__init__('movement_node')
         self.bridge = CvBridge()
@@ -16,17 +17,17 @@ class movement_node(Node):
         self.detected_objects = {}
 
     def object_info_callback(self, msg):
-        print("object received")
+        print("Object received")
         if msg is not None:
             obj_id = msg.id
             label = msg.label
             status = msg.status
 
-            if status == "removed" :
+            if status == ("REMOVED" or "LOST"):
                 # Remove the object with the specified ID from the dictionary if it exists.
                 if obj_id in self.detected_objects:
+                    print(f"Object {obj_id} removed")
                     del self.detected_objects[obj_id]
-                        
             else:
                 # Store the object information in the dictionary.
                 self.detected_objects[obj_id] = {
@@ -38,70 +39,90 @@ class movement_node(Node):
                     "x2": msg.x2,
                     "y2": msg.y2,
                     "depth_value": msg.depth_value,
-                    "start_remove_time" : 0
+                    "start_remove_time": 0
                 }
+
         self.move_robot_cmd()
 
     def image_callback(self, msg):
         print("image received")
         self.move_robot_cmd()
 
-
-
     def move_robot_cmd(self):
         print("move robot")
         try:
-
             if self.detected_objects:
-                # Initialize variables to keep track of the closest object and its depth.
+                # No objects detected, stop the robot.
+                self.move_cmd(0,0)
                 closest_obj = None
                 min_distance = float('inf')
-    
                 for obj_id, obj_data in self.detected_objects.items():
                     depth = obj_data['depth_value']
                     print("depth: ", str(depth))
+                    #print("obj_data", obj_data)
+                    #print("detected_objects",self.detected_objects)
+                    if len(obj_data) < 2:
+                        # Check if the current object is closer than the previously found closest object.
+                        if depth < min_distance:
+                            min_distance = depth
+                            closest_obj = obj_data
+                            print('closed: ', closest_obj)
 
-                    # Check if the current object is closer than the previously found closest object.
-                    if depth < min_distance:
-                        min_distance = depth
-                        closest_obj = obj_data
+                        if closest_obj is None:
+                            self.move_cmd(0,0)
+                            print("stop robot no objects")
+                            return
 
-                    if closest_obj is None:
-                        self.move_cmd(0,0)
-                        print("stop robot no objects")
+                        
+                        sorted_objects = sorted(self.detected_objects.values(), key=lambda obj: obj.get("depth_value", float('inf')))
+                        # Get the two closest objects
+                        goal_x = self.goal_x(sorted_objects,depth)
+
+                        # Define the input and output range
+                        min_input = 0
+                        max_input = 300
+                        min_output = -0.5
+                        max_output = 0.5
+
+                        # Scale goal_x
+                        rotation_speed = ((goal_x - min_input) / (max_input - min_input)) * (max_output - min_output) + min_output
+
+                        if goal_x < 140 :
+                            self.move_cmd(0.05,rotation_speed)
+                            print("rotate +")
+                        elif goal_x > 160:
+                            self.move_cmd(0.05,rotation_speed)
+                            print("rotate -")
+                        else :
+                            self.move_cmd(0.05,0.0)
+                            print("straight")
                         return
-                    
-                    x1 = closest_obj['x1']
-                    x2 = closest_obj['x2']
-                    depth = closest_obj['depth_value']
-    
-                    # Calculate the desired goal position based on the closest object's depth and position.
-                    goal_x = (x1 + x2) / 2
-                    goal_depth = depth
-    
-                    # Limit the values of goal_depth and goal_x
-                    max_linear_x = 0.22
-                    max_angular_z = 2.84
-                    goal_depth = min(max_linear_x, goal_depth)
-                    goal_x = min(max_angular_z, goal_x)
-    
-                    # Calculate linear and angular velocities to navigate towards the closest object.
-                    self.move_cmd(0.22, 0)
-            
-            else:
-                # No objects detected, stop the robot.
-                self.move_cmd(0,0)
+                    if len(obj_data) >= 2:
+                        self.move_cmd(0.05,0.0)
+                        print("straight")
+                else:
+                    # No objects detected, stop the robot.
+                    self.move_cmd(0,0)
 
         except Exception as e:
             self.get_logger().error(f"Error processing image: {str(e)}")
     
     def move_cmd(self, x, z):
-        cmd_msg = Twist()
-        cmd_msg.linear.x = float(x)
-        cmd_msg.angular.z = float(z)
-        self.cmd_pub.publish(cmd_msg)
+        print("sending move cmd")
+        self.cmd_msg.linear.x = float(x)
+        self.cmd_msg.angular.z = float(z)
+        self.cmd_pub.publish(self.cmd_msg)
+   
+    def goal_x(self,sorted_objects):
+        closet_objects = sorted_objects[:2]
+        total_x = 0
+        for obj in closet_objects:
+            x = (obj['x1'] + obj['x2']) / 2
+            total_x += x
 
-
+        average_x = total_x / 2           
+        print(f'average_x: {average_x}')
+        return average_x
 
 
 def main(args=None):

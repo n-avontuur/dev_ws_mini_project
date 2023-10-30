@@ -2,28 +2,29 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
-def generate_launch_description():
-    ld = LaunchDescription()
+def generate_normallaunch_description():
+    run = LaunchDescription()
     
     display_node = Node(
             package='mini_project',
-            executable='display',
+            executable='n_display',
             output='screen'
         )
 
     vision_node =    Node(
             package='mini_project',
-            executable='object_detection',
+            executable='n_object_detection',
             output='screen'
         )
 
     planner_node =   Node(
             package='mini_project',
-            executable='plan_move',
+            executable='n_plan_move',
             name='plan_move',
         )
     
-    ld.add_action(display_node)
-    ld.add_action(vision_node)
-    ld.add_action(planner_node)
-    return ld
+    run.add_action(display_node)
+    run.add_action(vision_node)
+    run.add_action(planner_node)
+
+    return run

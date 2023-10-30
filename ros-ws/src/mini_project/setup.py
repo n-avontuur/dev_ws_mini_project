@@ -20,10 +20,12 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'objectdetection_sender_node = mini_project.object_detection_publisher:main',
-            'objectdetection_reciever_node = mini_project.object_detection_subscriber:main',
-            'movement_node = mini_project.movement_node:main',
-            'planner_node = mini_project.planner_node:main',
+            # 'objectdetection_publisher = mini_project.object_detection_publisher:main',
+            # 'display_subscriber = mini_project.object_detection_subscriber:main',
+            # 'movement_node = mini_project.movement_node:main',
+            'display = mini_project.n_display:main',
+            'object_detection = mini_project.n_object_detection:main',
+            'plan_move = mini_project.n_plan_move:main',
         ],
     },
 )

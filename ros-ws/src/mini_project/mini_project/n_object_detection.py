@@ -17,10 +17,10 @@ LABEL_MAP = [
     "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
 ]
 
-class ObjectDepthDetectionNode(Node):
+class object_detection(Node):
 
     def __init__(self):
-        super().__init__('object_depth_detection_node')
+        super().__init__('object_detection')
         self.bridge = CvBridge()
         self.image_publisher = self.create_publisher(Image, 'camera_image', 10)
         self.tracked_objects_publisher = self.create_publisher(CustomObjectInfo, 'tracked_objects_info', 10)
@@ -165,7 +165,7 @@ class ObjectDepthDetectionNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ObjectDepthDetectionNode()
+    node = object_detection()
     rate = node.create_rate(2)
     node.detect_objects_and_depth()
     rate.sleep()  
